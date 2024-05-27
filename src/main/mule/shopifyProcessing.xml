@@ -9,7 +9,7 @@ http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/em
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
 <http:request-config
-		name="HTTP_Request_configuration1"
+		name="HTTP_Request_Shopify"
 		doc:name="HTTP Request configuration"
 		doc:id="d7d2f69d-b5e8-41f2-a1e0-ab699b7212c3">
 	<http:request-connection protocol="HTTPS"
@@ -19,7 +19,7 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 		doc:name="Configuration properties"
 		doc:id="e5cbae03-35ed-469c-b3ad-d79a15161c45" file="config.properties" />
 	<http:request-config
-		name="HTTP_Request_configuration2"
+		name="HTTP_Request_Wix"
 		doc:name="HTTP Request configuration"
 		doc:id="1b7cd847-b853-4690-9c61-61e74b8c346c">
 		<http:request-connection
@@ -66,11 +66,11 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 			doc:name="orderDetails" doc:id="e901336b-05af-4068-a0ae-8e962b486a37"
 			variableName="orderDetails" />
 		<try doc:name="Try" doc:id="ebbeef0e-819d-4400-af1c-8662154ef9be">
-			<http:request method="GET" doc:name="Get fulfillment_orders API V1" doc:id="c9161584-9421-4f80-89a9-fa06bf124ef7" config-ref="HTTP_Request_configuration1" path="/admin/api/2024-01/orders/{order_id}/fulfillment_orders.json">
+			<http:request method="GET" doc:name="Get fulfillment_orders API V1" doc:id="c9161584-9421-4f80-89a9-fa06bf124ef7" config-ref="HTTP_Request_Shopify" path="/admin/api/2024-01/orders/{order_id}/fulfillment_orders.json">
 				<http:headers><![CDATA[#[output application/java
 ---
 {
-	"X-Shopify-Access-Token" : "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"
+	"X-Shopify-Access-Token" : "${access_token_shopify}"
 }]]]></http:headers>
 				<http:uri-params><![CDATA[#[output application/json
 ---
@@ -80,11 +80,11 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 			</http:request>
 			<error-handler>
 				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="c50e1508-462e-49f1-91a7-e8599258b76a" type="HTTP:SERVICE_UNAVAILABLE">
-					<http:request method="GET" doc:name="Get fulfillment_orders API V2" doc:id="099fc0e3-6052-4df4-9134-f93481390185" config-ref="HTTP_Request_configuration1" path="/admin/api/2022-01/orders/{order_id}/fulfillment_orders.json">
+					<http:request method="GET" doc:name="Get fulfillment_orders API V2" doc:id="099fc0e3-6052-4df4-9134-f93481390185" config-ref="HTTP_Request_Shopify" path="/admin/api/2022-01/orders/{order_id}/fulfillment_orders.json">
 						<http:headers><![CDATA[#[output application/java
 ---
 {
-	"X-Shopify-Access-Token" : "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"
+	"X-Shopify-Access-Token" : "${access_token_shopify}"
 }]]]></http:headers>
 						<http:uri-params><![CDATA[#[output application/json
 ---
@@ -105,21 +105,21 @@ output application/json
 			</ee:message>
 		</ee:transform>
 		<try doc:name="Try" doc:id="df33fb91-5141-4556-be04-88c234ecec52" >
-			<http:request method="POST" doc:name="createFulfillment API V1" doc:id="86fc9dff-42ed-4c2e-ae64-a2b09bb41870" config-ref="HTTP_Request_configuration1" path="/admin/api/2024-01/fulfillments.json">
+			<http:request method="POST" doc:name="createFulfillment API V1" doc:id="86fc9dff-42ed-4c2e-ae64-a2b09bb41870" config-ref="HTTP_Request_Shopify" path="/admin/api/2024-01/fulfillments.json">
 			<http:headers><![CDATA[#[output application/json
 ---
 {
-	"X-Shopify-Access-Token": "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",
+	"X-Shopify-Access-Token": "${access_token_shopify}",
 	"Content-Type": "application/json"
 }]]]></http:headers>
 		</http:request>
 			<error-handler >
 				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="c6a8d50c-f716-4681-b6b3-650e649046c2" type="HTTP:SERVICE_UNAVAILABLE">
-					<http:request method="POST" doc:name="createFulfillment API V2" doc:id="4ccbf524-66fe-4094-8d6f-8fb552b8f273" config-ref="HTTP_Request_configuration1" path="/admin/api/2022-01/fulfillments.json">
+					<http:request method="POST" doc:name="createFulfillment API V2" doc:id="4ccbf524-66fe-4094-8d6f-8fb552b8f273" config-ref="HTTP_Request_Shopify" path="/admin/api/2022-01/fulfillments.json">
 						<http:headers ><![CDATA[#[output application/json
 ---
 {
-	"X-Shopify-Access-Token": "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",
+	"X-Shopify-Access-Token": "${access_token_shopify}",
 	"Content-Type": "application/json"
 }]]]></http:headers>
 					</http:request>
@@ -137,7 +137,7 @@ output application/json
 				<http:headers><![CDATA[#[output application/json
 ---
 {
-	"X-Shopify-Access-Token": "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",
+	"X-Shopify-Access-Token": "${access_token_shopify}",
 	"Content-Type": "application/json"
 }]]]></http:headers>
 				<http:uri-params><![CDATA[#[output application/json
@@ -152,7 +152,7 @@ output application/json
 							<http:headers ><![CDATA[#[output application/json
 ---
 {
-	"X-Shopify-Access-Token": "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",
+	"X-Shopify-Access-Token": "${access_token_shopify}",
 	"Content-Type": "application/json"
 }]]]></http:headers>
 							<http:uri-params ><![CDATA[#[output application/json
@@ -194,7 +194,7 @@ output application/json
 						<http:headers><![CDATA[#[output application/json
 ---
 {
-	"X-Shopify-Access-Token": "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",
+	"X-Shopify-Access-Token": "${access_token_shopify}",
 	"Content-Type": "application/json"
 }]]]></http:headers>
 					</http:request>
@@ -204,7 +204,7 @@ output application/json
 									<http:headers ><![CDATA[#[output application/json
 ---
 {
-	"X-Shopify-Access-Token": "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",
+	"X-Shopify-Access-Token": "${access_token_shopify}",
 	"Content-Type": "application/json"
 }]]]></http:headers>
 								</http:request>

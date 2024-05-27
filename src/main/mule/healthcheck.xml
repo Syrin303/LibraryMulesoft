@@ -66,11 +66,11 @@ output application/json
         <!-- Route pour vérifier l'état de /principalAPI -->
         <route>
             <!-- Logique pour traiter la réponse de /principalAPI -->
-				<http:request method="GET" doc:name="GET shopify" doc:id="7b780e33-5110-4e6a-a78c-1aae7aca28af" path="/admin/api/2024-01/shop.json" config-ref="HTTP_Request_configuration1" responseTimeout="900000">
+				<http:request method="GET" doc:name="GET shopify" doc:id="7b780e33-5110-4e6a-a78c-1aae7aca28af" path="/admin/api/2024-01/shop.json" config-ref="HTTP_Request_Shopify" responseTimeout="900000">
                 <http:headers><![CDATA[#[output application/java
 ---
 {
-    "X-Shopify-Access-Token" : "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"
+    "X-Shopify-Access-Token" : "${access_token_shopify}"
 }]]]></http:headers>
             </http:request>
 				<ee:transform doc:name="Transform shopifyAPI status">
@@ -89,11 +89,11 @@ output application/json
         
 </route>
 			<route >
-				<http:request method="GET" doc:name="GET shopify1" doc:id="ef0a7cc0-6305-4449-b58f-8891917e0883" config-ref="HTTP_Request_configuration1" path="/admin/api/2024-01/shop.json" responseTimeout="900000">
+				<http:request method="GET" doc:name="GET shopify1" doc:id="ef0a7cc0-6305-4449-b58f-8891917e0883" config-ref="HTTP_Request_Shopify" path="/admin/api/2024-01/shop.json" responseTimeout="900000">
 					<http:headers><![CDATA[#[output application/java
 ---
 {
-    "X-Shopify-Access-Token" : "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"
+    "X-Shopify-Access-Token" : "${access_token_shopify}"
 }]]]></http:headers>
 				</http:request>
 				<ee:transform doc:name="Transform wixAPI status" doc:id="c48bdcb0-76be-4f3e-8af6-733667313145" >
