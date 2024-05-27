@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<flow name="wixProcessingFlow" doc:id="e09644ec-37ec-4d89-b4da-d625906f5473" >
+		<http:listener doc:name="Listener" doc:id="f84b6ab1-824c-48da-9909-f4a05da911f0" config-ref="HTTP_Listener_config1" path="/wixProcess">
+			<http:response >
+				<http:headers ><![CDATA[#[output application/java
+---
+{
+	"body" : vars.email,
+	"mail" : vars.client_address
+}]]]></http:headers>
+			</http:response>
+		</http:listener>
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="cf454275-0839-4816-8d26-5ea620e372b9" variableName="Data"/>
+		<flow-ref doc:name="RetrieveToken" doc:id="0de07008-b742-434f-bfb8-27ccf838230b" name="RetrieveToken_Flow"/>
+		<flow-ref doc:name="orderFulfillementWix" doc:id="9f59b06c-33d0-479d-ae28-29d7d12b5f55" name="orderFulfillementWix_Flow"/>
+		<flow-ref doc:name="checkInventory" doc:id="9062d4eb-2445-4598-9c0d-999adbf2a67d" name="checkInventoryWix_Flow" />
+		<flow-ref doc:name="notifyClient" doc:id="8d2dd041-925b-4379-ae3a-3661b0711a0f" name="notifyClient_Flow"/>
+		<!-- [STUDIO:"Transform Message"]<ee:transform doc:name="Transform Message" doc:id="ac8731e5-9184-4c45-abd9-07fe93b22b68" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import * from dw::Runtime
+output application/json
+&#45;&#45;-
+{
+    a: now()
+} wait 5000&#93;&#93;></ee:set-payload>
+			</ee:message>
+		</ee:transform> [STUDIO] -->
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="376e4b39-2bed-4291-b227-c8f7c9c93b1e" type="ANY">
+				<logger level="ERROR" doc:name="Logger" doc:id="620a6562-527d-4b76-8fee-ef49b410c7b3" message="#[error.description]"/>
+			</on-error-propagate>
+		</error-handler>
+	
+	</flow>
+	<sub-flow name="notifyClient_Flow" doc:id="41b90713-5f7f-4b99-ab83-99f7ff9812b5" >
+		<set-variable value='#[%dw 2.0&#10;output application/java&#10;---&#10;"&lt;p&gt;Hello,&lt;/p&gt;" ++&#10;"&lt;p&gt;We are pleased to inform you that your order has been successfully shipped.&lt;/p&gt;" ++&#10;"&lt;p&gt;&lt;strong&gt;Order Details:&lt;/strong&gt;&lt;/p&gt;" ++&#10;"&lt;ul&gt;" ++&#10;"  &lt;li&gt;Order Number: " ++ (if (vars.orderFulfilled.order.number != null ) vars.orderFulfilled.order.number else "N/A") ++ "&lt;/li&gt;" ++&#10;"&lt;/ul&gt;" ++&#10;"&lt;p&gt;&lt;strong&gt;Shipping Details:&lt;/strong&gt;&lt;/p&gt;" ++&#10;"&lt;ul&gt;" ++&#10;"  &lt;li&gt;Tracking Number: " ++ (if (vars.orderFulfilled.order.shippingInfo != null and vars.orderFulfilled.order.shippingInfo.trackingNumber != null)vars.orderFulfilled.order.shippingInfo..trackingNumber as String else "N/A") ++ "&lt;/li&gt;" ++&#10;"  &lt;li&gt;Tracking Link: &lt;a href=\"" ++ (if (vars.order.orderFulfilled.shippingInfo != null and vars.order.orderFulfilled.shippingInfo.trackingLink != null)  vars.order.orderFulfilled.shippingInfo.trackingLink else "#") ++ "\"&gt;" ++ (if (vars.order.orderFulfilled.shippingInfo != null and vars.order.orderFulfilled.shippingInfo.trackingLink != null)  vars.order.orderFulfilled.shippingInfo.trackingLink else "#") ++ "&lt;/a&gt;&lt;/li&gt;" ++&#10;"&lt;/ul&gt;" ++&#10;"&lt;p&gt;Thank you for your trust.&lt;/p&gt;"]' doc:name="email" doc:id="9fdbeebd-1325-467a-869c-6d89a6a1885b" variableName="email" />
+		<set-variable value="#[vars.Data.order.buyerInfo.email]" doc:name="client_address" doc:id="d3677404-63f9-4664-9ae1-b8520c023482" variableName="client_address" />
+	<email:send doc:name="Notify client"
+		doc:id="044596ee-6c45-4164-a927-aa34602d0ad3" config-ref="Email_SMTP"
+		fromAddress="store+69193335035@t.shopifyemail.com"
+		subject="Comfirmation d'expédition">
+		<email:to-addresses>
+			<email:to-address value='#[vars.client_address]' />
+		</email:to-addresses>
+		<email:body contentType="text/html">
+			<email:content><![CDATA[#[vars.email]]]></email:content>
+		</email:body>
+	</email:send>
+		
+	</sub-flow>
+	<sub-flow name="orderFulfillementWix_Flow" doc:id="47a9a951-5faf-44b7-9d66-d72e45c1c342" >
+		<ee:transform doc:name="Transform Message" doc:id="de8db964-99cd-47a0-be88-ec63195ade8b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "fulfillment": {
+    "lineItems": vars.Data.order.lineItems map ((lineItem, indexOfLineItem) -> {
+      "index": indexOfLineItem + 1,
+      "quantity": lineItem.quantity
+    }),
+    "trackingInfo": {
+      "shippingProvider": "Standard Shipping",
+      "trackingNumber": "123456789",
+      "trackingLink": "https://www.example.com/track/123456789"
+    }
+  }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<try doc:name="Try" doc:id="210c380c-db39-4351-a310-e12d0de27884" >
+			<http:request method="POST" doc:name="Create fulfillement" doc:id="f75b41ea-a352-4637-8f58-80d4f81b5b21" url="https://www.wixapis.com/stores/v2/orders/{orderId}/fulfillments">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"Authorization" : vars.token,
+	"Content-Type":"application/json"
+}]]]></http:headers>
+			<http:uri-params><![CDATA[#[output application/json
+---
+{
+	"orderId" : vars.Data.order.id
+}]]]></http:uri-params>
+		</http:request>
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="0f9b97fb-38f6-40fe-a959-354116046f7c" type="HTTP:SERVICE_UNAVAILABLE">
+					<http:request method="POST" doc:name="Request" doc:id="f81a0634-3e3e-478c-bc21-9b6b4fd4ceed" url="https://www.wixapis.com/ecom/v1/fulfillments/orders/{orderId}/create-fulfillment">
+						<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : vars.token,
+	"Content-Type":"application/json"
+}]]]></http:headers>
+						<http:uri-params ><![CDATA[#[output application/json
+---
+{
+	"orderId" : vars.Data.order.id
+}]]]></http:uri-params>
+					</http:request>
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<set-variable value="#[payload]" doc:name="orderFulfilled" doc:id="ce78fee1-0475-4bdb-be43-8f0b3617c3ce" variableName="orderFulfilled"/>
+	
+</sub-flow>
+		<sub-flow name="RetrieveToken_Flow" doc:id="d5fadd15-be0c-4c54-a0bf-af532bed6cca" >
+		<os:retrieve doc:name="Retrieve" doc:id="b69f032c-9ece-4972-b6a2-6fec88d6c360" key="token" objectStore="Object_store" />
+		<set-variable value="#[payload]" doc:name="token" doc:id="8b2f5b58-5374-42c0-81bf-af85496e8f02" variableName="token" />
+	</sub-flow>
+	<flow name="refreshTokenFlow1" doc:id="0568a2d1-569c-44d8-b4c7-1f45f2741f4b" >
+		<scheduler doc:name="Scheduler" doc:id="47da5a9b-1055-4948-90ac-41b4d33062a1" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="1" timeUnit="HOURS"/>
+			</scheduling-strategy>
+		</scheduler>
+		<ee:transform doc:name="Transform Message" doc:id="a3f7c7bb-0212-4e1a-893b-8142c82f9d42">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "grant_type": "refresh_token",
+    "client_id": "400592ed-2f44-43ce-91a3-c49117dfa8b7",
+    "client_secret": "34da5891-dbe9-4092-98cf-b78c6ae61161",
+    "refresh_token": "OAUTH2.eyJraWQiOiJkZ0x3cjNRMCIsImFsZyI6IkhTMjU2In0.eyJkYXRhIjoie1wiaWRcIjpcIjExNDQzN2U3LTEwZDAtNDA0OS04MTZjLTgwNjZhZGFjYTIyYlwifSIsImlhdCI6MTcxMzM2Mjk4OSwiZXhwIjoxNzc2NDM0OTg5fQ.L8g0DFFKOtScmOMEomV1B5Ny3SJTJvG0PVNosLx9f6g"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="Request" doc:id="48daee2a-9490-47e3-a04a-6545e38ec6c5" url="https://www.wix.com/oauth/access" />
+		<os:store doc:name="Store" doc:id="d678b31d-db6d-43bb-9e5e-4812b5743594" key="token" objectStore="Object_store">
+			<os:value><![CDATA[#[payload.access_token]]]></os:value>
+		</os:store>
+	</flow>
+	<sub-flow name="checkInventoryWix_Flow" doc:id="49b187b5-0ffa-42df-9fde-a97e382f1606" >
+		<foreach doc:name="For Each" doc:id="70d69f22-d81b-4548-b55f-2798d3716f68" collection="#[vars.Data.order.lineItems]" >
+			<set-variable value="#[payload]" doc:name="Set Variable" doc:id="8036193a-bfb9-4998-96ea-4cf8daf6a888" variableName="order" />
+			<http:request method="POST" doc:name="Request" doc:id="91750ef0-596d-4e34-badf-f775b6384412" url="https://www.wixapis.com/stores/v2/inventoryItems/product/{productId}/getVariants" >
+				<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : vars.token,
+	"Content-Type":"application/json"
+}]]]></http:headers>
+				<http:uri-params ><![CDATA[#[output application/json
+---
+{
+	"productId" : payload.catalogReference.catalogItemId
+}]]]></http:uri-params>
+			</http:request>
+			<ee:transform doc:name="Transform Message" doc:id="6aa46238-8bf5-498f-9725-5e51ccf7f5a7" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    productId: payload.inventoryItem.productId,
+    variants: payload.inventoryItem.variants map ((variant) -> {
+        variantId: variant.variantId,
+        inStock: variant.inStock,
+        quantity: variant.quantity,
+        productExists: variant.inStock
+    })
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<choice doc:name="Choice" doc:id="4437ce90-4d21-42e2-a179-c92881200bc1" >
+				<when expression="#[sizeOf(payload.variants filter ((variant) -&gt; variant.productExists) ) &gt; 0]" >
+					<ee:transform doc:name="Transform Message" doc:id="849246b3-7828-4cb3-8ca4-0ea8e71e925c" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"decrementData": [{
+		"productId": vars.order.catalogReference.catalogItemId,
+		"variantId": vars.order.catalogReference.options.variantId,
+		"decrementBy": vars.order.quantity
+	}]
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<http:request method="POST" doc:name="Request" doc:id="b0cdb32c-72ee-4fa3-ba72-348d68e0146f" url="https://www.wixapis.com/stores/v2/inventoryItems/decrement" >
+						<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : vars.token,
+	"Content-Type":"application/json"
+}]]]></http:headers>
+					</http:request>
+				</when>
+				<otherwise >
+					<raise-error doc:name="Raise error" doc:id="edc1cbe3-7682-4e56-bd87-4ed077565e93" type="INVENTORY:ERROR_OCCURRED" description="WIX INVENTORY IS UNAVAILABLE"/>
+				</otherwise>
+			</choice>
+		</foreach>
+	
+</sub-flow>
+</mule>

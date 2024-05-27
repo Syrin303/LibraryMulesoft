@@ -1,0 +1,253 @@
+<mule xmlns:slack="http://www.mulesoft.org/schema/mule/slack"
+	xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc"
+	xmlns:netsuite="http://www.mulesoft.org/schema/mule/netsuite"
+	xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:tracing="http://www.mulesoft.org/schema/mule/tracing"
+	xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:jms="http://www.mulesoft.org/schema/mule/jms"
+	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/tracing http://www.mulesoft.org/schema/mule/tracing/current/mule-tracing.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd
+http://www.mulesoft.org/schema/mule/netsuite http://www.mulesoft.org/schema/mule/netsuite/current/mule-netsuite.xsd
+http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd
+http://www.mulesoft.org/schema/mule/slack http://www.mulesoft.org/schema/mule/slack/current/mule-slack.xsd">
+	<http:listener-config name="HTTP_Listener_config"
+		doc:name="HTTP Listener config"
+		doc:id="f430aa43-8ee0-44f6-9742-a11f81f613bf">
+		<http:listener-connection protocol="HTTPS"
+			host="0.0.0.0" port="8082" readTimeout="5000">
+			<tls:context>
+				<tls:key-store type="jks" path="server.jks"
+					keyPassword="keystore123" password="keystore123" />
+			</tls:context>
+
+		</http:listener-connection>
+	</http:listener-config>
+	
+	<jms:config name="JMS_Config" doc:name="JMS Config"
+		doc:id="8f531dfe-5afc-41b0-b98f-12211f3152fa">
+		<jms:active-mq-connection username="admin" password="admin">
+			<jms:factory-configuration brokerUrl="tcp://localhost:61616"/>
+		</jms:active-mq-connection>
+	</jms:config>
+
+
+	<ee:object-store-caching-strategy
+		name="Caching_Strategy3" doc:name="Caching Strategy"
+		doc:id="e6569b9e-501c-4d12-90fb-3ed71a446bb1">
+		<os:private-object-store maxEntries="20"
+			entryTtl="20" expirationIntervalUnit="SECONDS" />
+	</ee:object-store-caching-strategy>
+	<http:listener-config name="HTTP_Listener_Health"
+		doc:name="HTTP Listener config"
+		doc:id="2be1f86c-9213-4caf-85f3-78a210ff3634">
+		<http:listener-connection host="0.0.0.0"
+			port="8081" readTimeout="300000" />
+	</http:listener-config>
+<!-- <configuration doc:name="Configuration"
+		doc:id="dd820adc-bd2c-4d8d-a638-078ddb11a0ff"
+		defaultErrorHandler-ref="allErrorHandler" />  -->
+	<email:smtp-config name="Email_SMTP" doc:name="Email SMTP" doc:id="f5e5a4ae-365b-45bd-8741-fe1308b5beff" >
+		<email:smtps-connection host="smtp.gmail.com" user="sirine.bourcheda@ensi-uma.tn" password="sirine12345678" >
+			<tls:context >
+				<tls:key-store type="jks" path="server.jks" keyPassword="keystore123" password="keystore123" />
+			</tls:context>
+		</email:smtps-connection>
+	</email:smtp-config>
+	<slack:config name="Slack_Connector_Config" doc:name="Slack Connector Config" doc:id="3f169e6c-e8a2-4da7-83cb-aad39d07dc35" >
+		<slack:slack-auth-connection >
+			<slack:oauth-authorization-code consumerKey="6939015715223.6956056255284" consumerSecret="c787d438271055a37877a8e4ee20c579" authorizationUrl="https://slack.com/oauth/v2/authorize" accessTokenUrl="https://slack.com/api/oauth.v2.access" scopes="chat:write incoming-webhook channels:manage chat:write.public" />
+			<slack:oauth-callback-config listenerConfig="HTTP_Listener_config" callbackPath="/webhook" authorizePath="/authorize" externalCallbackUrl="https://localhost:8082/webhook" />
+		</slack:slack-auth-connection>
+	</slack:config>
+	<http:request-config name="HTTP_Request_configuration3" doc:name="HTTP Request configuration" doc:id="330130ff-61a4-45c7-be42-deed169fca94" >
+		<http:request-connection host="localhost" port="8083" connectionIdleTimeout="30000000"/>
+	</http:request-config>
+	<http:listener-config name="HTTP_Listener_config1" doc:name="HTTP Listener config" doc:id="b3504717-d978-45a3-9aae-8667a3aa8d97" >
+		<http:listener-connection host="0.0.0.0" port="8083" />
+	</http:listener-config>
+	<os:object-store name="Object_store" doc:name="Object store" doc:id="9a32eead-c62b-47a1-8fe5-8425c1daca87" entryTtlUnit="DAYS" expirationIntervalUnit="DAYS" entryTtl="20" expirationInterval="20"/>
+	<http:listener-config name="HTTP_Listener_Notification" doc:name="HTTP Listener config" doc:id="bb249722-70ca-4abf-839c-87f9070a7886" >
+		<http:listener-connection protocol="HTTPS" host="0.0.0.0" port="8084" >
+			<tls:context >
+				<tls:key-store type="jks" path="server.jks" keyPassword="keystore123" password="keystore123" />
+			</tls:context>
+		</http:listener-connection>
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_Notification" doc:name="HTTP Request configuration" doc:id="b277a6fe-7060-480b-9e4f-d9843553b661" >
+		<http:request-connection protocol="HTTPS" host="localhost" port="8084" >
+			<tls:context >
+				<tls:trust-store path="client_truststore.ts" password="keystore123" />
+			</tls:context>
+		</http:request-connection>
+	</http:request-config>
+	<flow name="webhookFlow"
+		doc:id="38842359-4655-428a-b6a8-d804c4f5b644">
+		<http:listener doc:name="Listener"
+			doc:id="7becb875-1d68-488e-b44c-efbececb4bd7"
+			allowedMethods="POST"
+			path="/webhook" config-ref="HTTP_Listener_config">
+		</http:listener>
+		<tracing:with-correlation-id
+			doc:name="With 
+        CorrelationID"
+			doc:id="7aaebdae-1e19-4d12-b4a2-3c71fd2705b1"
+			correlationId="#[correlationId]">
+			<choice doc:name="Choice"
+				doc:id="895430a7-362b-40d3-ab58-d1fd43a1350e">
+				<when expression="#[payload != null]">
+					<ee:transform doc:name="Validation" doc:id="abda5d01-52a5-4274-befd-23da7a92d1fb">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Payload":payload,
+	"Source":if (payload.order.admin_graphql_api_id != null) "Shopify" else "Wix Commerce"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+					<tracing:set-logging-variable doc:name="Set logging variable" doc:id="5bdc3b23-f06c-47d5-92c6-4aea481669e3" variableName="Source" value="#[payload.Source]"/>
+					<jms:publish doc:name="Publish to mainQueue"
+						doc:id="9776dbb6-028d-409a-8da6-7948b6b3a59a"
+						config-ref="JMS_Config" destination="webhookQueue" persistentDelivery="true" timeToLive="1" timeToLiveUnit="DAYS"/>
+					<logger level="INFO" doc:name="Logger" doc:id="8b8a9d73-a11d-42b5-9bb5-4f69d6f282a9" message="message published"/>
+				</when>
+				<otherwise>
+					<raise-error doc:name="Raise error" doc:id="fbe388bb-735c-4d55-a9e3-6e43effc07d2" type='DATA:DATA_NULL' description="order data is not valid"/>
+				</otherwise>
+			</choice>
+		</tracing:with-correlation-id>
+		<error-handler>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="2b2ebb6e-c698-4ee0-bf27-b0272dfbb388" >
+				<logger level="ERROR" doc:name="Logger" doc:id="0d8b70c8-d54f-4410-b273-6e98cc9f62e0" message="#[error.description]" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="JMSFlowh"
+		doc:id="cb8f6fab-3a85-4066-bf46-6970112fb07f">
+		<jms:listener doc:name="On New Message" doc:id="d0cf24fd-5337-4843-8774-09d8c008b478" config-ref="JMS_Config" destination="webhookQueue">
+			<jms:consumer-type>
+				<jms:queue-consumer />
+			</jms:consumer-type>
+			<jms:response persistentDelivery="true" timeToLive="1" timeToLiveUnit="DAYS" />
+		</jms:listener>
+		<tracing:set-logging-variable doc:name="Set logging variable" doc:id="ca329c3d-ade0-474c-8cbe-900328b1c735" variableName="correlationID" value="#[correlationId]"/>
+		<logger level="INFO" doc:name="Logger" doc:id="22673fbe-00f3-4255-b95e-e9e2183b9f9c" message="#[payload.Payload.data]"/>
+		<tracing:with-correlation-id doc:name="With CorrelationID" doc:id="bf6d7931-7715-4e5c-b938-7fbfb3f6d29b" correlationId="#[correlationId]">
+			<choice doc:name="Choice" doc:id="4fac450a-5381-40e6-b30b-581f37cc2cbe">
+			<when expression='#[payload.Source == "Wix Commerce"]'>
+				<try doc:name="Try" doc:id="14838399-014b-47d0-9a57-2e12a5080e6a">
+			<http:request method="POST" doc:name="Wix Process" doc:id="5c342cd9-4d4c-4b6d-9a46-cf19cf7bd49f" path="/wixProcess" config-ref="HTTP_Request_configuration3" responseTimeout="#[99999999]" sendCorrelationId="ALWAYS">
+				<http:body><![CDATA[#[payload.Payload]]]></http:body>
+				<http:headers><![CDATA[#[output application/json
+---
+{
+	"Content-Type": "application/json"
+}]]]></http:headers>
+			</http:request>
+			<error-handler>
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="312440a7-63c9-4265-b2fd-f5c6d2b55d3c">
+					<logger level="ERROR" doc:name="Logger" doc:id="63181a8e-4335-412d-90a0-31bfda916394" message="#[error.description]" />
+				</on-error-continue>
+			</error-handler>
+		</try>
+			</when>
+			<otherwise>
+				<try doc:name="Try" doc:id="2783a023-939d-43be-bedf-22ffe08ef67b">
+					<http:request method="POST" doc:name="Shopify Process" doc:id="5243bb99-cb6b-4016-b8f2-33617de4a4be" path="/shopifyProcess" config-ref="HTTP_Request_configuration3" responseTimeout="#[99999999]">
+						<http:body><![CDATA[#[payload.Payload]]]></http:body>
+					</http:request>
+					<error-handler>
+						<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="6ecb1b18-ed73-4f7d-b6ea-7b81ae17593d">
+							<logger level="ERROR" doc:name="Logger" doc:id="31de65a9-3b13-4ce0-bb16-ad1358482df6" message="#[error.description]" />
+						</on-error-continue>
+					</error-handler>
+				</try>
+			</otherwise>
+		</choice>
+		</tracing:with-correlation-id>
+		<choice doc:name="Choice" doc:id="479ddd4b-34c4-4a02-94db-0e5143513846">
+			<when expression="#[message.attributes.statusCode == 200]">
+				<logger level="INFO" doc:name="Logger" doc:id="43a58548-df41-4f15-be25-14caa1e3e84b" message="#[message.payload]" />
+<!-- 				<email:send doc:name="Notify client" doc:id="6bedebc7-99b7-46f8-ba2b-f57ddc06f50d" config-ref="Email_SMTP" fromAddress="store+69193335035@t.shopifyemail.com" subject="Comfirmation d'expédition"> -->
+<!-- 			<email:to-addresses> -->
+<!-- 				<email:to-address value='#[message.attributes.headers["mail"]]' /> -->
+<!-- 			</email:to-addresses> -->
+<!-- 			<email:body contentType="text/html"> -->
+<!-- 				<email:content><![CDATA[#[message.attributes.headers["body"]]]]></email:content> -->
+<!-- 			</email:body> -->
+<!-- 		</email:send> -->
+				<ee:transform doc:name="Payload" doc:id="2d805d10-2a88-409d-be6f-5fd3d80577a2">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+message.payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<http:request method="POST" doc:name="Request" doc:id="d9c2f3b0-0550-43db-ac2b-d37add4c78ba" config-ref="HTTP_Request_Notification" path="/notification"/>
+			</when>
+			<otherwise >
+				<jms:publish doc:name="Publish to DLQ" doc:id="cf44f402-80cc-41b2-925a-1b6bdf28e91b" config-ref="JMS_Config" destination="DLQ.webhookQueue"/>
+				<logger level="ERROR" doc:name="Logger" doc:id="08843490-005e-4bea-b8ea-678f50824453" message='#["order not being processed"]'/>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="Reprocessing_Flow" doc:id="f5c0d69e-ea0d-47dd-8d17-5a721e4f1863" >
+		<scheduler doc:name="Scheduler" doc:id="f3581153-1a74-437c-84fc-3a8a2992a6de" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="2" timeUnit="HOURS" startDelay="1"/>
+			</scheduling-strategy>
+		</scheduler>
+		<jms:consume doc:name="Consume" doc:id="03e26fb3-7d5e-466a-8793-a3a6cb3ca316" config-ref="JMS_Config" destination="DLQ.webhookQueue" maximumWaitUnit="SECONDS" />
+		<choice doc:name="Choice" doc:id="c938c443-0329-40ae-9fc4-e2373500a4b5" >
+			<when expression="#[payload != null]">
+				<jms:publish doc:name="Publish to mainQueue" doc:id="4d5123b2-ca9a-40ae-8b13-686ce953b6a7" destination="webhookQueue" config-ref="JMS_Config" />
+				<slack:create-chatpost-message doc:name="Send Message" doc:id="82371a18-ce43-4527-8f46-9f66c10d7fe6" config-ref="Slack_Connector_Config">
+			<slack:chatpost-message-content><![CDATA[#[%dw 2.0
+output application/json
+---
+{
+	"channel": "C06TM0SARAB",
+	"text": "The following message has been re-enqueued in the main queue for reprocessing: \n\n" ++ write(payload, "application/json")
+}]]]></slack:chatpost-message-content>
+		</slack:create-chatpost-message>
+			</when>
+		</choice>
+	</flow>
+	<flow name="NotificationFlow" doc:id="5b073801-da28-42a1-963a-597ee0562e2d" >
+		<http:listener doc:name="Listener" doc:id="3285f221-72bc-405a-bbc4-938205c0ce33" config-ref="HTTP_Listener_Notification" path="/notification"/>
+		<logger level="INFO" doc:name="Logger" doc:id="adf3a206-3003-40cc-a7b1-511a8816d1b3" message="#[payload]"/>
+	</flow>
+	<flow name="healthCheckFlow"
+		doc:id="b79f3a31-7d43-4d8d-b3f4-a9be699a47d3">
+		<flow-ref doc:name="get:\health:healthcheck-config"
+			doc:id="3acc1d50-e67e-4e8a-a15c-4be39e585d56"
+			name="get:\health:healthcheck-config" />
+	</flow>
+	<error-handler name="allErrorHandler"
+		doc:id="98137ab5-d69e-4299-90c3-f37073d8b0b6">
+		<on-error-continue enableNotifications="true"
+			logException="true" doc:name="On Error Continue"
+			doc:id="2861a83c-539f-4236-9c3f-a3777e8ac7ea">
+			<logger level="ERROR" doc:name="GlobalError"
+				doc:id="da1f1c7d-a3e5-445e-9ce3-bafc58580392"
+				message="#[error.description]" />
+		</on-error-continue>
+	</error-handler>
+
+
+</mule>

@@ -1,0 +1,153 @@
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd ">
+    <apikit:config name="healthcheck-config" api="resource::15b9ccc5-b480-46b5-ac53-d068dc5e8c8e:healthcheck:1.0.0:raml:zip:healthcheck.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <flow name="healthcheck-main">
+        <http:listener config-ref="HTTP_Listener_Health" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="healthcheck-config" />
+        <error-handler>
+            <!-- Gestion des erreurs pour healthcheck-main -->
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <!-- Autres gestionnaires d'erreurs pour healthcheck-main -->
+        </error-handler>
+    </flow>
+    <flow name="healthcheck-console">
+        <http:listener config-ref="HTTP_Listener_Health" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="healthcheck-config" />
+        <error-handler>
+            <!-- Gestion des erreurs pour healthcheck-console -->
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform doc:name="Transform Message">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <!-- Autres gestionnaires d'erreurs pour healthcheck-console -->
+        </error-handler>
+    </flow>
+   <flow name="get:\health:healthcheck-config" doc:id="8dcb4399-3d49-4d10-a0ae-7736b4d0561e">
+    <http:listener config-ref="HTTP_Listener_Health" path="/health" allowedMethods="GET" doc:name="HTTP"/>
+    
+    <!-- Configuration de Scatter-Gather pour tester les services en parallèle -->
+    <scatter-gather doc:name="Scatter-Gather">
+        <!-- Route pour vérifier l'état de /principalAPI -->
+        <route>
+            <!-- Logique pour traiter la réponse de /principalAPI -->
+				<http:request method="GET" doc:name="GET shopify" doc:id="7b780e33-5110-4e6a-a78c-1aae7aca28af" path="/admin/api/2024-01/shop.json" config-ref="HTTP_Request_configuration1" responseTimeout="900000">
+                <http:headers><![CDATA[#[output application/java
+---
+{
+    "X-Shopify-Access-Token" : "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"
+}]]]></http:headers>
+            </http:request>
+				<ee:transform doc:name="Transform shopifyAPI status">
+                <ee:message >
+                    <ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    service: "shopifyAPI",
+    status: if ( message.attributes.statusCode != null and message.attributes.statusCode >= 200 and message.attributes.statusCode < 300 ) "UP" else "DOWN",
+    errorCode: if ( message.attributes.statusCode != null and message.attributes.statusCode >= 200 and message.attributes.statusCode < 300 ) "" else "THRESHOLD BREACHED",
+    statusCode: message.attributes.statusCode
+}]]></ee:set-payload>
+                </ee:message>
+            </ee:transform>
+        
+</route>
+			<route >
+				<http:request method="GET" doc:name="GET shopify1" doc:id="ef0a7cc0-6305-4449-b58f-8891917e0883" config-ref="HTTP_Request_configuration1" path="/admin/api/2024-01/shop.json" responseTimeout="900000">
+					<http:headers><![CDATA[#[output application/java
+---
+{
+    "X-Shopify-Access-Token" : "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"
+}]]]></http:headers>
+				</http:request>
+				<ee:transform doc:name="Transform wixAPI status" doc:id="c48bdcb0-76be-4f3e-8af6-733667313145" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    service: "wixAPI",
+    status: if ( message.attributes.statusCode != null and message.attributes.statusCode >= 200 and message.attributes.statusCode < 300 ) "UP" else "DOWN",
+    errorCode: if ( message.attributes.statusCode != null and message.attributes.statusCode >= 200 and message.attributes.statusCode < 300 ) "" else "THRESHOLD BREACHED",
+    statusCode: message.attributes.statusCode
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</route>
+        
+    
+</scatter-gather>
+    
+    <!-- Transformation finale pour déterminer l'état global de santé -->
+    <ee:transform doc:name="Transform global health status" >
+        <ee:message >
+            <ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    status: if ( payload[0].payload.statusCode == 200 and payload[1].payload.statusCode == 200 ) "UP" else "DOWN",
+    details: payload
+}]]></ee:set-payload>
+        </ee:message>
+    </ee:transform>
+    <logger level="INFO" doc:name="Logger" message="#[payload]" />
+    
+    <!-- Gestion des erreurs -->
+    <error-handler>
+        <!-- Gestion des erreurs pour les appels d'API -->
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="3c7f0725-caa3-4619-a49e-0958bfded082" >
+				<ee:transform doc:name="Transform Message" doc:id="09662b6f-92f5-4f5f-92f6-a1fc99070901">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status":"DOWN",
+	"details": error.description
+	
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-continue>
+    
+</error-handler>
+</flow>
+
+
+</mule>

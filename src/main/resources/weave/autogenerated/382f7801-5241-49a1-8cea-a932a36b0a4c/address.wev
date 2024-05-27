@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_382f7801_5241_49a1_8cea_a932a36b0a4c_Output_Variables_client_address = Null
+

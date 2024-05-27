@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+<http:request-config
+		name="HTTP_Request_configuration1"
+		doc:name="HTTP Request configuration"
+		doc:id="d7d2f69d-b5e8-41f2-a1e0-ab699b7212c3">
+	<http:request-connection protocol="HTTPS"
+		host="boutiquedev-com.myshopify.com" />
+	</http:request-config>
+	<configuration-properties
+		doc:name="Configuration properties"
+		doc:id="e5cbae03-35ed-469c-b3ad-d79a15161c45" file="config.properties" />
+	<http:request-config
+		name="HTTP_Request_configuration2"
+		doc:name="HTTP Request configuration"
+		doc:id="1b7cd847-b853-4690-9c61-61e74b8c346c">
+		<http:request-connection
+			host="www.wixapis.com/ecom" protocol="HTTPS">
+
+		</http:request-connection>
+	</http:request-config>
+
+	<flow name="shopifyProcessFlow" doc:id="da29de06-c3d2-498f-b366-f7e1c94aeda7" >
+	
+		<http:listener doc:name="Listener" doc:id="1025cb09-3cbc-4539-834b-89729b9b00e8" config-ref="HTTP_Listener_config1" path="/shopifyProcess">
+			<http:response >
+				<http:headers ><![CDATA[#[output application/java
+---
+{
+	"body" : vars.email,
+	"mail" : vars.client_address
+}]]]></http:headers>
+			</http:response>
+		</http:listener>
+		<set-variable value="#[payload]" doc:name="orderData" doc:id="edb79285-fee0-4c8a-a89a-1ff79c17b6c8" variableName="Data"/>
+		<flow-ref doc:name="fulfillmentProcess" doc:id="a5b1dd6d-f9f5-448b-b88f-778a068f1957" name="fulfillement_Flow"/>
+		<set-variable value="#[payload]" doc:name="orderFulfilled" doc:id="3b84ee56-296f-4270-8029-8f032b5a553e" variableName="orderFulfilled"/>
+		<flow-ref doc:name="checkInventory" doc:id="394328e1-ff08-4583-8d20-6b02b15f3adf" name="checkInventory_Flow" />
+		<flow-ref doc:name="notifyCustomer" doc:id="7e301f55-d8e9-40cb-9074-9fed25942537" name="notifyClientShopify_Flow"/>
+	</flow>
+	<sub-flow name="notifyClientShopify_Flow" doc:id="382f7801-5241-49a1-8cea-a932a36b0a4c" >
+		<set-variable value="#[vars.Data.order.customer.email]" doc:name="client_address" doc:id="b6e2fc0a-5e2d-4988-933c-ddde257c97a2" variableName="client_address" />
+		<set-variable value='#[%dw 2.0&#10;output application/java&#10;---&#10;"&lt;p&gt;Hello,&lt;/p&gt;" ++&#10;"&lt;p&gt;We are pleased to inform you that your order has been successfully shipped.&lt;/p&gt;" ++&#10;"&lt;p&gt;&lt;strong&gt;Order Details:&lt;/strong&gt;&lt;/p&gt;" ++&#10;"&lt;ul&gt;" ++&#10;"  &lt;li&gt;Order Number: " ++ (if (vars.orderFulfilled.fulfillment != null and vars.orderFulfilled.fulfillment.name != null) vars.orderFulfilled.fulfillment.name else "N/A") ++ "&lt;/li&gt;" ++&#10;"&lt;/ul&gt;" ++&#10;"&lt;p&gt;&lt;strong&gt;Shipping Details:&lt;/strong&gt;&lt;/p&gt;" ++&#10;"&lt;ul&gt;" ++&#10;"  &lt;li&gt;Tracking Number: " ++ (if (vars.orderFulfilled.fulfillment != null and vars.orderFulfilled.fulfillment.tracking_number != null) vars.orderFulfilled.fulfillment.tracking_number as String else "N/A") ++ "&lt;/li&gt;" ++&#10;"  &lt;li&gt;Tracking Link: &lt;a href=\"" ++ (if (vars.orderFulfilled.fulfillment != null and vars.orderFulfilled.fulfillment.tracking_url != null) vars.orderFulfilled.fulfillment.tracking_url else "#") ++ "\"&gt;" ++ (if (vars.orderFulfilled.fulfillment != null and vars.orderFulfilled.fulfillment.tracking_url != null) vars.orderFulfilled.fulfillment.tracking_url else "N/A") ++ "&lt;/a&gt;&lt;/li&gt;" ++&#10;"&lt;/ul&gt;" ++&#10;"&lt;p&gt;Thank you for your trust.&lt;/p&gt;"]' doc:name="email" doc:id="18e9ec85-bd11-4544-8d48-2de51cda572c" variableName="email" />
+		<email:send doc:name="Notify customer"
+		doc:id="9950755b-586b-42bb-80ad-bd8f478d43b6" config-ref="Email_SMTP"
+		fromAddress="store+69193335035@t.shopifyemail.com"
+		subject="Comfirmation d'expédition">
+		<email:to-addresses>
+			<email:to-address value='#[vars.client_address]' />
+		</email:to-addresses>
+		<email:body contentType="text/html">
+			<email:content><![CDATA[#[vars.email]]]></email:content>
+		</email:body>
+	</email:send>
+	</sub-flow>
+	<sub-flow name="fulfillement_Flow" doc:id="a1b52f0d-d407-4b60-a547-1ba0bf753ad8" >
+	<set-variable value="#[payload.order.id]"
+			doc:name="orderDetails" doc:id="e901336b-05af-4068-a0ae-8e962b486a37"
+			variableName="orderDetails" />
+		<try doc:name="Try" doc:id="ebbeef0e-819d-4400-af1c-8662154ef9be">
+			<http:request method="GET" doc:name="Get fulfillment_orders API V1" doc:id="c9161584-9421-4f80-89a9-fa06bf124ef7" config-ref="HTTP_Request_configuration1" path="/admin/api/2024-01/orders/{order_id}/fulfillment_orders.json">
+				<http:headers><![CDATA[#[output application/java
+---
+{
+	"X-Shopify-Access-Token" : "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"
+}]]]></http:headers>
+				<http:uri-params><![CDATA[#[output application/json
+---
+{
+	"order_id" : vars.orderDetails
+}]]]></http:uri-params>
+			</http:request>
+			<error-handler>
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="c50e1508-462e-49f1-91a7-e8599258b76a" type="HTTP:SERVICE_UNAVAILABLE">
+					<http:request method="GET" doc:name="Get fulfillment_orders API V2" doc:id="099fc0e3-6052-4df4-9134-f93481390185" config-ref="HTTP_Request_configuration1" path="/admin/api/2022-01/orders/{order_id}/fulfillment_orders.json">
+						<http:headers><![CDATA[#[output application/java
+---
+{
+	"X-Shopify-Access-Token" : "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"
+}]]]></http:headers>
+						<http:uri-params><![CDATA[#[output application/json
+---
+{
+	"order_id" : vars.orderDetails
+}]]]></http:uri-params>
+					</http:request>
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<ee:transform doc:name="Transform Message"
+			doc:id="cbf4e849-f2c3-442e-b8cb-72f159f447eb">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{"fulfillment":{"line_items_by_fulfillment_order":[{"fulfillment_order_id":payload.fulfillment_orders[0].id}],"tracking_info":{"number":"MS1562678","url":"https://www.my-shipping-company.com?tracking_number=MS1562678"}}}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<try doc:name="Try" doc:id="df33fb91-5141-4556-be04-88c234ecec52" >
+			<http:request method="POST" doc:name="createFulfillment API V1" doc:id="86fc9dff-42ed-4c2e-ae64-a2b09bb41870" config-ref="HTTP_Request_configuration1" path="/admin/api/2024-01/fulfillments.json">
+			<http:headers><![CDATA[#[output application/json
+---
+{
+	"X-Shopify-Access-Token": "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",
+	"Content-Type": "application/json"
+}]]]></http:headers>
+		</http:request>
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="c6a8d50c-f716-4681-b6b3-650e649046c2" type="HTTP:SERVICE_UNAVAILABLE">
+					<http:request method="POST" doc:name="createFulfillment API V2" doc:id="4ccbf524-66fe-4094-8d6f-8fb552b8f273" config-ref="HTTP_Request_configuration1" path="/admin/api/2022-01/fulfillments.json">
+						<http:headers ><![CDATA[#[output application/json
+---
+{
+	"X-Shopify-Access-Token": "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",
+	"Content-Type": "application/json"
+}]]]></http:headers>
+					</http:request>
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<set-payload value="#[payload]" doc:name="Set Payload" doc:id="cb0f40ec-be19-47ba-8032-c1cbbc84caf1" />
+		</sub-flow>
+		<sub-flow name="checkInventory_Flow" doc:id="4391f182-0e5b-4b64-8df8-0a74d043f2a6" >
+		<foreach doc:name="For Each" doc:id="424bb604-d255-41c0-9f08-8e31acb5dc1d" collection="#[vars.orderFulfilled.fulfillment.line_items]">
+			<set-variable value="#[vars.orderFulfilled.fulfillment.location_id]" doc:name="Set Variable" doc:id="55417fc7-f31f-4fed-b022-fb6d14bd9574" variableName="Location"/>
+			<set-variable value="#[payload.quantity]" doc:name="Set Variable" doc:id="4fa42c1a-e9b3-4f6b-aeb6-3b3955e8b6f1" variableName="quantity"/>
+			<try doc:name="Try" doc:id="e51a5cbf-807e-4b67-b43f-46f8e97d9eb7" >
+				<http:request method="GET" doc:name="GetVariants API V1" doc:id="dfdda752-83c2-4d6a-a60a-8abb8e9820ee" url="https://boutiquedev-com.myshopify.com/admin/api/2023-10/variants/{variant_id}.json">
+				<http:headers><![CDATA[#[output application/json
+---
+{
+	"X-Shopify-Access-Token": "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",
+	"Content-Type": "application/json"
+}]]]></http:headers>
+				<http:uri-params><![CDATA[#[output application/json
+---
+{
+	"variant_id" : payload.variant_id
+}]]]></http:uri-params>
+			</http:request>
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="a11c280a-10d1-4dd5-998e-bc2dac704781" type="HTTP:SERVICE_UNAVAILABLE">
+						<http:request method="GET" doc:name="GetVariants API v2" doc:id="873c112f-c326-41ab-b780-5034394e542b" url="https://boutiquedev-com.myshopify.com/admin/api/2023-10/variants/{variant_id}.json" >
+							<http:headers ><![CDATA[#[output application/json
+---
+{
+	"X-Shopify-Access-Token": "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",
+	"Content-Type": "application/json"
+}]]]></http:headers>
+							<http:uri-params ><![CDATA[#[output application/json
+---
+{
+	"variant_id" : payload.variant_id
+}]]]></http:uri-params>
+						</http:request>
+					</on-error-continue>
+				</error-handler>
+			</try>
+			<set-variable value="#[payload.variant.inventory_item_id]" doc:name="Set Variable" doc:id="a0dd4a71-33ec-45f2-bd0c-1863184b0d6d" variableName="InventoryItem"/>
+			<ee:transform doc:name="Stock Check" doc:id="eb71fbc9-acd6-4533-95a9-c934d510618c">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "Exist": if (vars.quantity <= payload.variant.inventory_quantity) "AVAILABLE" else "UNAVAILABLE"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			<choice doc:name="Choice" doc:id="8f220a26-381f-4d75-9af5-bf978920dce0" >
+				<when expression='#[payload.Exist == "AVAILABLE"]'>
+					<ee:transform doc:name="Transform Message" doc:id="25197c48-3251-41bf-912b-5091b9fe732d">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"location_id": vars.Location,
+	"inventory_item_id": vars.InventoryItem,
+	"available_adjustment": -vars.quantity
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+					<try doc:name="Try" doc:id="b2a7ddc6-97ff-45ae-984d-c28c8b466c78" >
+						<http:request method="POST" doc:name="Stock adjust API" doc:id="5a8e41a2-053b-425b-b567-58bb59051561" url="https://boutiquedev-com.myshopify.com/admin/api/2024-04/inventory_levels/adjust.json" sendCorrelationId="NEVER">
+						<http:headers><![CDATA[#[output application/json
+---
+{
+	"X-Shopify-Access-Token": "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",
+	"Content-Type": "application/json"
+}]]]></http:headers>
+					</http:request>
+						<error-handler >
+							<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="6a71f9aa-96ba-47e2-992f-f2c8767d8f0f" type="HTTP:SERVICE_UNAVAILABLE">
+								<http:request method="POST" doc:name="Stock adjust API" doc:id="6f054eb9-ca7e-4bd0-8ba2-fdf5fae37d96" url="https://boutiquedev-com.myshopify.com/admin/api/2024-04/inventory_levels/adjust.json" sendCorrelationId="NEVER" >
+									<http:headers ><![CDATA[#[output application/json
+---
+{
+	"X-Shopify-Access-Token": "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",
+	"Content-Type": "application/json"
+}]]]></http:headers>
+								</http:request>
+							</on-error-continue>
+						</error-handler>
+					</try>
+				
+</when>
+				<otherwise >
+					<raise-error doc:name="Raise error" doc:id="4ba55a76-2655-4c48-9926-957b7c6a424f" type="INVENTORY:ERROR_OCCURRED" description="STOCK IS UNAVAILABLE" />
+				</otherwise>
+			</choice>
+		</foreach>
+	</sub-flow>
+	
+</mule>
