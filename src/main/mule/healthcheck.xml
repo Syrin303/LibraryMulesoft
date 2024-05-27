@@ -70,7 +70,7 @@ output application/json
                 <http:headers><![CDATA[#[output application/java
 ---
 {
-    
+    "X-Shopify-Access-Token" : "${access_token_shopify}"
 }]]]></http:headers>
             </http:request>
 				<ee:transform doc:name="Transform shopifyAPI status">
@@ -93,7 +93,7 @@ output application/json
 					<http:headers><![CDATA[#[output application/java
 ---
 {
-    
+    "X-Shopify-Access-Token" : "${access_token_shopify}"
 }]]]></http:headers>
 				</http:request>
 				<ee:transform doc:name="Transform wixAPI status" doc:id="c48bdcb0-76be-4f3e-8af6-733667313145" >
