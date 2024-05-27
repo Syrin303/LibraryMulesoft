@@ -70,7 +70,7 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 				<http:headers><![CDATA[#[output application/java
 ---
 {
-	"X-Shopify-Access-Token" : "${access_token_shopify}"
+	
 }]]]></http:headers>
 				<http:uri-params><![CDATA[#[output application/json
 ---
@@ -84,7 +84,7 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 						<http:headers><![CDATA[#[output application/java
 ---
 {
-	"X-Shopify-Access-Token" : "${access_token_shopify}"
+	
 }]]]></http:headers>
 						<http:uri-params><![CDATA[#[output application/json
 ---
@@ -109,7 +109,7 @@ output application/json
 			<http:headers><![CDATA[#[output application/json
 ---
 {
-	"X-Shopify-Access-Token": "${access_token_shopify}",
+	,
 	"Content-Type": "application/json"
 }]]]></http:headers>
 		</http:request>
@@ -137,7 +137,7 @@ output application/json
 				<http:headers><![CDATA[#[output application/json
 ---
 {
-	"X-Shopify-Access-Token": "${access_token_shopify}",
+	
 	"Content-Type": "application/json"
 }]]]></http:headers>
 				<http:uri-params><![CDATA[#[output application/json
@@ -152,7 +152,7 @@ output application/json
 							<http:headers ><![CDATA[#[output application/json
 ---
 {
-	"X-Shopify-Access-Token": "${access_token_shopify}",
+	,
 	"Content-Type": "application/json"
 }]]]></http:headers>
 							<http:uri-params ><![CDATA[#[output application/json
@@ -194,7 +194,7 @@ output application/json
 						<http:headers><![CDATA[#[output application/json
 ---
 {
-	"X-Shopify-Access-Token": "${access_token_shopify}",
+	
 	"Content-Type": "application/json"
 }]]]></http:headers>
 					</http:request>
@@ -204,7 +204,7 @@ output application/json
 									<http:headers ><![CDATA[#[output application/json
 ---
 {
-	"X-Shopify-Access-Token": "${access_token_shopify}",
+	
 	"Content-Type": "application/json"
 }]]]></http:headers>
 								</http:request>
